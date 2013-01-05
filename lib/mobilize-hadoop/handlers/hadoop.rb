@@ -5,62 +5,76 @@ module Mobilize
     end
 
     def Hadoop.exec_path
-      Hadoop.config['hdfs']['exec_path']
+      Hadoop.config['hadoop']['exec_path']
     end
 
-    def Hadoop.node
-      Hadoop.config['node']
+    def Hadoop.clusters
+      Hadoop.config['clusters']
     end
 
-    def Hadoop.run(command,file_hash={},su_user=nil)
+    def Hadoop.output_cluster
+      Hadoop.config['output_cluster']
+    end
+
+    def Hadoop.output_dir
+      Hadoop.config['output_dir']
+    end
+
+    def Hadoop.gateway_node(cluster)
+      Hadoop.clusters[cluster]['gateway_node']
+    end
+
+    def Hadoop.read_limit
+      Hadoop.config['read_limit']
+    end
+
+    def Hadoop.root(cluster)
+      namenode = Hadoop.clusters[cluster]['namenode']
+      "hdfs://#{namenode['name']}:#{namenode['port']}/"
+    end
+
+    def Hadoop.run(command,file_hash={},cluster=Hadoop.output_cluster,su_user=nil)
       h_command = if command.starts_with?("hadoop")
                     command.sub("hadoop",Hadoop.exec_path)
                   else
                     "#{Hadoop.exec_path} #{command}"
                   end
-      Ssh.run(Hadoop.node,h_command,file_hash,su_user)
+      gateway_node = Hadoop.gateway_node(cluster)
+      Ssh.run(gateway_node,h_command,file_hash,su_user)
     end
 
-    def Hadoop.fs(command,file_hash={},except=true,su_user=nil)
+    def Hadoop.dfs(command,file_hash={},cluster=Hadoop.output_cluster,su_user=nil)
       command = ["-",command].join unless command.starts_with?("-")
-      Hadoop.run("fs #{command}",file_hash,except,su_user).ie do |r|
+      command = "dfs -fs #{Hadoop.root(cluster)} #{command}"
+      Hadoop.run(command,file_hash,cluster,su_user).ie do |r|
         r.class==Array ? r.first : r
       end
     end
 
-    def Hadoop.ls(command="")
-      Hadoop.fs("ls #{command}")
-    end
-
-    def Hadoop.cat(path,su_user=nil)
-      #ignore errors due to mising file
-      Hadoop.fs("cat #{path}",{},false)
-    end
-
-    def Hadoop.rm(path,su_user=nil)
+    def Hadoop.rm(path,cluster=Hadoop.output_cluster,su_user=nil)
       #ignore errors due to missing file
-      Hadoop.fs("rm #{path}",{},false,su_user)
+      Hadoop.dfs("rm #{path}",{},cluster,su_user)
     end
 
-    def Hadoop.rmr(dir,su_user=nil)
+    def Hadoop.rmr(dir,cluster=Hadoop.output_cluster,su_user=nil)
       #ignore errors due to missing dir
-      Hadoop.fs("rmr #{dir}",{},false,su_user)
+      Hadoop.dfs("rmr #{dir}",{},cluster,su_user)
     end
 
-    def Hadoop.job(command,file_hash={},except=false,su_user=nil)
+    def Hadoop.job(command,file_hash={},cluster=Hadoop.output_cluster,su_user=nil)
       command = ["-",command].join unless command.starts_with?("-")
-      Hadoop.run("job #{command}",file_hash,except,su_user).ie do |r|
+      Hadoop.run("job -fs #{Hadoop.root(cluster)} #{command}",file_hash,cluster,su_user).ie do |r|
         r.class==Array ? r.first : r
       end
     end
 
-    def Hadoop.working_jobs
-      raw_list = Hadoop.job("list")
+    def Hadoop.job_list(cluster=Hadoop.output_cluster)
+      raw_list = Hadoop.job("list",{},cluster)
       raw_list.split("\n")[1..-1].join("\n").tsv_to_hash_array
     end
 
-    def Hadoop.job_status(hdfs_job_id)
-      raw_status = Hadoop.job("status #{hdfs_job_id}")
+    def Hadoop.job_status(hadoop_job_id,cluster=Hadoop.output_cluster)
+      raw_status = Hadoop.job("status #{hadoop_job_id}",{},cluster)
       dhash_status = raw_status.strip.split("\n").map do |sline|
                        delim_index = [sline.index("="),sline.index(":")].compact.min
                        if delim_index
@@ -73,22 +87,26 @@ module Mobilize
       hash_status
     end
 
-    def Hadoop.job_params(hdfs_job_id)
-      Hash.from_xml(Hadoop.job("status #{hdfs_job_id}"))
+    def Hadoop.read(path,cluster=Hadoop.output_cluster,su_user=nil)
+      gateway_node = Hadoop.gateway_node(cluster)
+      #need to direct stderr to dev null since hadoop throws errors at being headed off
+      command = "((#{Hadoop.exec_path} fs -cat #{path} | head -c #{Hadoop.read_limit}) > out.txt 2> /dev/null) && cat out.txt"
+      Ssh.run(gateway_node,command,{},su_user)
     end
 
-    def Hadoop.read(path)
-      #read contents of folder
-      path += "*" if path.ends_with?("/")
-      Hadoop.cat("#{path}")
-    end
-
-    def Hadoop.write(path,string,su_user=nil)
+    def Hadoop.write(path,string,cluster=Hadoop.output_cluster,su_user=nil)
       file_hash = {'file.txt'=>string}
       Hadoop.rm(path) #remove old one
-      write_command = "fs -copyFromLocal file.txt #{path}"
-      Hadoop.run(write_command,file_hash,true,su_user)
-      return true
+      write_command = "dfs -copyFromLocal file.txt #{path}"
+      Hadoop.run(write_command,file_hash,cluster,su_user)
+      return path
+    end
+
+    def Hadoop.copy(from_path,to_path,from_cluster=Hadoop.output_cluster,to_cluster=from_cluster,su_user=nil)
+      Hadoop.rm(to_path,to_cluster) #remove to_path
+      command = "dfs -cp #{from_url} #{to_url}"
+      Hadoop.run(command,{},from_cluster,su_user)
+      
     end
 
     def Hadoop.run_by_stage_path(stage_path)
@@ -98,28 +116,41 @@ module Mobilize
       command = params['cmd']
       file_hash = Ssh.file_hash_by_stage_path(stage_path)
       su_user = s.params['su_user']
-      if su_user and !Ssh.sudoers(Hadoop.node).include?(u.name)
-        raise "You do not have su permissions for this node"
-      elsif su_user.nil? and Ssh.su_all_users(node)
+      cluster = s.params['cluster'] || Hadoop.output_cluster
+      if su_user and !Ssh.sudoers(cluster).include?(u.name)
+        raise "You do not have su permissions for this cluster"
+      elsif su_user.nil? and Ssh.su_all_users(cluster)
         su_user = u.name
       end
-      Hadoop.run(node,command,file_hash,su_user)
+      out_string = Hadoop.run(cluster,command,file_hash,su_user).to_s
+      out_url = "hadoop://#{Hadoop.output_namenode}/#{Hadoop.output_dir}/hadoop/#{stage_path}/out"
+      Dataset.write_by_url(out_url,out_string)
+      out_url
     end
 
     def Hadoop.write_by_stage_path(stage_path)
       s = Stage.where(:path=>stage_path).first
       u = s.job.runner.user
       params = s.params
-      target = params['target']
-      file_hash = Ssh.file_hash_by_stage_path(stage_path)
-      string = file_hash.values.first
-      su_user = s.params['su_user']
+      source_path = params['source']
+      #target_path = params['target']
+      su_user = params['su_user']
       if su_user and !Ssh.sudoers(Hadoop.node).include?(u.name)
         raise "You do not have su permissions for this node"
       elsif su_user.nil? and Ssh.su_all_users(node)
         su_user = u.name
       end
-      Hadoop.write(target,string,su_user)
+      source_dst = s.source_dst(source_path)
+      if source_dst.handler=='hadoop'
+        #do Hadoop.copy
+        Hadoop.copy(from_path,to_path,from_namenode,to_namenode,su_user)
+      else
+        #read normally, do Hadoop.write
+        Hadoop.write(to_path,source_dst.read,to_namenode,su_user)
+      end
+      out_url = "hadoop://#{Hadoop.output_namenode}/#{Hadoop.output_dir}/hadoop/#{stage_path}/out"
+      Dataset.write_by_url(url,string)
+      out_url
     end
   end
 end
