@@ -110,10 +110,10 @@ parameters for Hdfs stages. Cluster aliases contain 5 parameters:
 This node must be defined in ssh.yml according to the specs in
 [mobilize-ssh][mobilize-ssh]. The gateway node can be the same for
 multiple clusters, depending on your cluster setup.
-  * hadoop_exec_path - defines the path to the hadoop executable on the
+  * exec_path - defines the path to the hadoop executable on the
 gateway_node.
 
-Sample hdfs.yml:
+Sample hadoop.yml:
 
 ``` yml
 ---
@@ -127,13 +127,13 @@ development:
         name: dev_namenode.host.com
         port: 50070
       gateway_node: dev_hadoop_host
-      hadoop_exec_path: /path/to/hadoop
+      exec_path: /path/to/hadoop
     dev_cluster_2:
       namenode:
         name: dev_namenode_2.host.com
         port: 50070
       gateway_node: dev_hadoop_host
-      hadoop_exec_path: /path/to/hadoop
+      exec_path: /path/to/hadoop
 test:
   output_cluster: test_cluster
   output_dir: /home/mobilize/test/
@@ -144,13 +144,13 @@ test:
         name: test_namenode.host.com
         port: 50070
       gateway_node: test_hadoop_host
-      hadoop_exec_path: /path/to/hadoop
+      exec_path: /path/to/hadoop
     test_cluster_2:
       namenode:
         name: test_namenode_2.host.com
         port: 50070
       gateway_node: test_hadoop_host
-      hadoop_exec_path: /path/to/hadoop
+      exec_path: /path/to/hadoop
 production:
   output_cluster: prod_cluster
   output_dir: /home/mobilize/production/
@@ -161,13 +161,13 @@ production:
         name: prod_namenode.host.com
         port: 50070
       gateway_node: prod_hadoop_host
-      hadoop_exec_path: /path/to/hadoop
+      exec_path: /path/to/hadoop
     prod_cluster_2:
       namenode:
         name: prod_namenode_2.host.com
         port: 50070
       gateway_node: prod_hadoop_host
-      hadoop_exec_path: /path/to/hadoop
+      exec_path: /path/to/hadoop
 ```
 
 <a name='section_Start'></a>
@@ -178,7 +178,7 @@ Start
 ### Create Job
 
 * For mobilize-hdfs, the following stages are available. 
-  * cluster and su_user are optional for all of these:
+  * cluster and su_user are optional for all of the below.
     * cluster defaults to output_cluster;
     * su_user is treated the same way as in [mobilize-ssh][mobilize-ssh].
   * hdfs.read `source:<hdfs_full_path>, cluster:<cluster_alias>, su_user:su_user`, which reads the input path on the specified cluster.
@@ -210,10 +210,10 @@ projects into the config dir, and populate the values in the hdfs.yml file.
 
 * The test runs a 4 stage job:
   * test_hdfs_1:
-    * `hdfs.write target:"/home/mobilize/test/test_hdfs_1.out",source:"Runner_mobilize(test)/test_hdfs_1.in"`
-    * `hdfs.copy source:"/home/mobilize/test/test_hdfs_1.out",target:"/home/mobilize/test/test_hdfs_1_copy.out"`
+    * `hdfs.write target:"/home/mobilize/test/test_hdfs_1.out", source:"Runner_mobilize(test)/test_hdfs_1.in"`
+    * `hdfs.copy source:"/home/mobilize/test/test_hdfs_1.out", target:"/home/mobilize/test/test_hdfs_1_copy.out"`
     * `hdfs.read source:"/home/mobilize/test/test_hdfs_1_copy.out"`
-    * `gsheet.write source:"stage3",target:"Runner_mobilize(test)/test_hdfs_1_copy.out"`
+    * `gsheet.write source:"stage3", target:"Runner_mobilize(test)/test_hdfs_1_copy.out"`
   * at the end of the test, there should be a sheet named "test_hdfs_1_copy.out" with the same data as test_hdfs_1.in
 
 <a name='section_Meta'></a>
