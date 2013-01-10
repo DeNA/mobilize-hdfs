@@ -1,0 +1,11 @@
+- name: test_ssh_1
+  active: true
+  trigger: once
+  status: ""
+  stage1: hdfs.write target:"/home/mobilize/test/test_hdfs_1.out", 
+            source:"Runner_mobilize(test)/test_hdfs_1.in"
+  stage2: hdfs.copy source:"/home/mobilize/test/test_hdfs_1.out", 
+            target:"/home/mobilize/test/test_hdfs_copy.out",
+            target_cluster:"prod"
+  stage3: hdfs.read source:"/home/mobilize/test/test_hdfs_1_copy.out"
+  stage4: gsheet.write source:"stage3", target:"Runner_mobilize(test)/test_hdfs_1_copy.out"

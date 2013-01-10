@@ -2,12 +2,12 @@ module Mobilize
   module Hdfs
     def Hdfs.root(cluster=Hadoop.output_cluster)
       namenode = Hadoop.clusters[cluster]['namenode']
-      "hdfs://#{namenode['name']}:#{namenode['port']}/"
+      "hdfs://#{namenode['name']}:#{namenode['port']}"
     end
 
     def Hdfs.run(command,cluster=Hadoop.output_cluster,su_user=nil)
       command = ["-",command].join unless command.starts_with?("-")
-      command = "dfs -fs #{Hdfs.root(cluster)} #{command}"
+      command = "dfs -fs #{Hdfs.root(cluster)}/ #{command}"
       Hadoop.run(command,{},cluster,su_user)
     end
 
@@ -38,25 +38,27 @@ module Mobilize
 
     def Hdfs.copy(from_path,to_path,from_cluster=Hadoop.output_cluster,to_cluster=from_cluster,su_user=nil)
       Hdfs.rm(to_path,to_cluster) #remove to_path
+      from_url = "#{Hadoop.root(from_cluster)}#{from_path}"
+      to_url = "#{Hadoop.root(to_cluster)}#{to_path}"
       command = "dfs -cp #{from_url} #{to_url}"
       Hdfs.run(command,{},from_cluster,su_user)
+      return to_url
     end
 
-    def Hdfs.run_by_stage_path(stage_path)
+    def Hdfs.read_by_stage_path(stage_path)
       s = Stage.where(:path=>stage_path).first
       u = s.job.runner.user
       params = s.params
-      command = params['cmd']
-      file_hash = Ssh.file_hash_by_stage_path(stage_path)
-      su_user = s.params['su_user']
-      cluster = s.params['cluster'] || Hadoop.output_cluster
-      if su_user and !Ssh.sudoers(cluster).include?(u.name)
+      su_user = params['su_user']
+      cluster = params['cluster'] || Hadoop.output_cluster
+      source = params['source']
+      if su_user and !Ssh.sudoers(Hadoop.gateway_node(cluster)).include?(u.name)
         raise "You do not have su permissions for this cluster"
       elsif su_user.nil? and Ssh.su_all_users(cluster)
         su_user = u.name
       end
-      out_string = Hdfs.run(cluster,command,file_hash,su_user).to_s
-      out_url = "hdfs://#{Hadoop.output_cluster}/#{Hadoop.output_dir}/hdfs/#{stage_path}/out"
+      out_string = Hdfs.read(source,cluster,su_user).to_s
+      out_url = "hdfs://#{cluster}/#{Hadoop.output_dir}/hdfs/#{stage_path}/out"
       Dataset.write_by_url(out_url,out_string)
       out_url
     end
@@ -74,16 +76,40 @@ module Mobilize
         su_user = u.name
       end
       source_dst = s.source_dst(source_path)
-      if source_dst.handler=='hdfs'
-        #do Hdfs.copy
-        Hdfs.copy(from_path,to_path,from_namenode,to_namenode,su_user)
-      else
-        #read normally, do Hdfs.write
-        Hdfs.write(to_path,source_dst.read,to_namenode,su_user)
-      end
+      Hdfs.write(to_path,source_dst.read,to_namenode,su_user)
       out_url = "hdfs://#{Hadoop.output_namenode}/#{Hadoop.output_dir}/hdfs/#{stage_path}/out"
       Dataset.write_by_url(url,string)
       out_url
+    end
+
+    def Hdfs.copy_by_stage_path(stage_path)
+      s = Stage.where(:path=>stage_path).first
+      u = s.job.runner.user
+      params = s.params
+      su_user = params['su_user']
+      source_cluster = params['source_cluster'] || Hadoop.output_cluster
+      target_cluster = params['target_cluster'] || Hadoop.output_cluster
+      source = params['source']
+      target = params['target']
+      if su_user and !Ssh.sudoers(Hadoop.gateway_node(cluster)).include?(u.name)
+        raise "You do not have su permissions for this cluster"
+      elsif su_user.nil? and Ssh.su_all_users(cluster)
+        su_user = u.name
+      end
+      out_string = Hdfs.copy(source,target,source_cluster,target_cluster,su_user).to_s
+      out_url = "hdfs://#{cluster}/#{Hadoop.output_dir}/hdfs/#{stage_path}/out"
+      Dataset.write_by_url(out_url,out_string)
+      out_url
+    end
+
+    def Hdfs.read_by_dataset_path(dst_path)
+      cluster, path = dst_path.split("/").ie{|p| [p.first,p[1..-1].join("/")]}
+      Hdfs.read(path,cluster)
+    end
+
+    def Hdfs.write_by_dataset_path(dst_path,string)
+      cluster, path = dst_path.split("/").ie{|p| [p.first,p[1..-1].join("/")]}
+      Hdfs.write(path,string,cluster)
     end
   end
 end
