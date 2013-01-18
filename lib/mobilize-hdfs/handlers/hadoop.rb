@@ -4,11 +4,11 @@ module Mobilize
       Base.config('hadoop')
     end
 
-    def Hadoop.exec_path(cluster=Hadoop.output_cluster)
+    def Hadoop.exec_path(cluster)
       Hadoop.config['clusters'][cluster]['exec_path']
     end
 
-    def Hadoop.gateway_node(cluster=Hadoop.output_cluster)
+    def Hadoop.gateway_node(cluster)
       Hadoop.clusters[cluster]['gateway_node']
     end
 
@@ -28,19 +28,19 @@ module Mobilize
       Hadoop.config['read_limit']
     end
 
-    def Hadoop.job(command,file_hash={},cluster=Hadoop.output_cluster,su_user=nil)
+    def Hadoop.job(command,cluster,user,file_hash={})
       command = ["-",command].join unless command.starts_with?("-")
-      Hadoop.run("job -fs #{Hdfs.root(cluster)} #{command}",file_hash,cluster,su_user).ie do |r|
+      Hadoop.run("job -fs #{Hdfs.root(cluster)} #{command}",cluster,user,file_hash).ie do |r|
         r.class==Array ? r.first : r
       end
     end
 
-    def Hadoop.job_list(cluster=Hadoop.output_cluster)
+    def Hadoop.job_list(cluster)
       raw_list = Hadoop.job("list",{},cluster)
       raw_list.split("\n")[1..-1].join("\n").tsv_to_hash_array
     end
 
-    def Hadoop.job_status(hdfs_job_id,cluster=Hadoop.output_cluster)
+    def Hadoop.job_status(hdfs_job_id,cluster)
       raw_status = Hadoop.job("status #{hdfs_job_id}",{},cluster)
       dhash_status = raw_status.strip.split("\n").map do |sline|
                        delim_index = [sline.index("="),sline.index(":")].compact.min
@@ -54,14 +54,14 @@ module Mobilize
       hash_status
     end
 
-    def Hadoop.run(command,file_hash={},cluster=Hadoop.output_cluster,su_user=nil)
+    def Hadoop.run(command,cluster,user,file_hash={})
       h_command = if command.starts_with?("hadoop")
                     command.sub("hadoop",Hadoop.exec_path(cluster))
                   else
                     "#{Hadoop.exec_path(cluster)} #{command}"
                   end
       gateway_node = Hadoop.gateway_node(cluster)
-      Ssh.run(gateway_node,h_command,file_hash,su_user)
+      Ssh.run(gateway_node,h_command,user,file_hash)
     end
   end
 end

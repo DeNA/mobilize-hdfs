@@ -1,7 +1,7 @@
 ---
 development:
   output_cluster: dev_cluster
-  output_dir: /home/mobilize/development/
+  output_dir: /user/mobilize/development/
   read_limit: 1000000000
   clusters:
     dev_cluster:
@@ -18,7 +18,7 @@ development:
       exec_path: /path/to/hadoop
 test:
   output_cluster: test_cluster
-  output_dir: /home/mobilize/test/
+  output_dir: /user/mobilize/test/
   read_limit: 1000000000
   clusters:
     test_cluster:
@@ -35,7 +35,7 @@ test:
       exec_path: /path/to/hadoop
 production:
   output_cluster: prod_cluster
-  output_dir: /home/mobilize/production/
+  output_dir: /user/mobilize/production/
   read_limit: 1000000000
   clusters:
     prod_cluster:
