@@ -12,7 +12,7 @@ Table Of Contents
   * [Mobilize-Hdfs](#section_Install_Mobilize-Hdfs)
   * [Install Dirs and Files](#section_Install_Dirs_and_Files)
 * [Configure](#section_Configure)
-  * [Hdfs](#section_Configure_Hdfs)
+  * [Hadoop](#section_Configure_Hadoop)
 * [Start](#section_Start)
   * [Create Job](#section_Start_Create_Job)
   * [Run Test](#section_Start_Run_Test)
