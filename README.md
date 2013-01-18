@@ -69,19 +69,19 @@ run
 
   $ rake mobilize_hdfs:setup
 
-This will copy over a sample hdfs.yml to your config dir.
+This will copy over a sample hadoop.yml to your config dir.
 
 <a name='section_Configure'></a>
 Configure
 ------------
 
-<a name='section_Configure_Hdfs'></a>
-### Configure Hdfs
+<a name='section_Configure_Hadoop'></a>
+### Configure Hadoop
 
-* Hdfs is big data. That means we need to be careful when reading from
+* Hadoop is big data. That means we need to be careful when reading from
 the cluster as it could easily fill up our mongodb instance, RAM, local disk
 space, etc.
-* To achieve this, all hdfs operations, stage outputs, etc. are
+* To achieve this, all hadoop operations, stage outputs, etc. are
 executed and stored on the cluster only. 
   * The exceptions are:
     * writing to the cluster from an external source, such as a google
@@ -90,9 +90,10 @@ is no risk as the external source has much more strict size limits than
 hdfs.
     * reading from the cluster, such as for posting to google sheet. In
 this case, the read_limit parameter dictates the maximum amount that can
-be read.
+be read. If the data is bigger than the read limit, an exception will be
+raised.
 
-The Hdfs configuration consists of:
+The Hadoop configuration consists of:
 * output_cluster, which is the cluster where stage outputs will be
 stored. Clusters are defined in the clusters parameter as described
 below.
@@ -107,6 +108,7 @@ parameters for Hdfs stages. Cluster aliases contain 5 parameters:
     * name - namenode full name, as in namenode1.host.com
     * port - namenode port, by default 50070
   * gateway_node - defines the node that executes the cluster commands.
+  * exec_path - defines the path to the hadoop 
 This node must be defined in ssh.yml according to the specs in
 [mobilize-ssh][mobilize-ssh]. The gateway node can be the same for
 multiple clusters, depending on your cluster setup.
@@ -119,7 +121,7 @@ Sample hadoop.yml:
 ---
 development:
   output_cluster: dev_cluster
-  output_dir: /home/mobilize/development/
+  output_dir: /user/mobilize/development/
   read_limit: 1000000000
   clusters:
     dev_cluster:
@@ -136,7 +138,7 @@ development:
       exec_path: /path/to/hadoop
 test:
   output_cluster: test_cluster
-  output_dir: /home/mobilize/test/
+  output_dir: /user/mobilize/test/
   read_limit: 1000000000
   clusters:
     test_cluster:
@@ -153,7 +155,7 @@ test:
       exec_path: /path/to/hadoop
 production:
   output_cluster: prod_cluster
-  output_dir: /home/mobilize/production/
+  output_dir: /user/mobilize/production/
   read_limit: 1000000000
   clusters:
     prod_cluster:
@@ -178,15 +180,20 @@ Start
 ### Create Job
 
 * For mobilize-hdfs, the following stages are available. 
-  * cluster and su_user are optional for all of the below.
+  * cluster and user are optional for all of the below.
     * cluster defaults to output_cluster;
-    * su_user is treated the same way as in [mobilize-ssh][mobilize-ssh].
-  * hdfs.read `source:<hdfs_full_path>, cluster:<cluster_alias>, su_user:su_user`, which reads the input path on the specified cluster.
-  * hdfs.write `source:<gsheet_full_path>, target:<hdfs_full_path>, cluster:<cluster_alias>, su_user:su_user` 
-    * The gsheet_full_path should be of the form `<gbook_name>/<gsheet_name>`. The test uses "Requestor_mobilize(test)/test_hdfs_1.in".
-    * The hdfs_full_path is the full path on the relevant cluster. The test uses "/home/mobilize/test/test_hdfs_1.in".
-  * hdfs.copy `source:<source_hdfs_full_path>,target:<target_hdfs_full_path>, source_cluster:<source_cluster_alias>, target_cluster:<target_cluster_alias>, su_user:su_user`
-    * both cluster arguments and su_user are optional. If copying from
+    * user is treated the same way as in [mobilize-ssh][mobilize-ssh].
+  * hdfs.read `source:<hdfs_full_path>, user:<user>`, which reads the input path on the specified cluster.
+  * hdfs.write `source:<gsheet_full_path>, target:<hdfs_full_path>, user:<user>` 
+  * hdfs.copy `source:<source_hdfs_full_path>,target:<target_hdfs_full_path>,user:<user>`
+  * The gsheet_full_path should be of the form `<gbook_name>/<gsheet_name>`. The test uses "Requestor_mobilize(test)/test_hdfs_1.in".
+  * The hdfs_full_path is the cluster alias followed by full path on the cluster. 
+    * if a full path is supplied without a preceding cluster alias (e.g. "/user/mobilize/test/test_hdfs_1.in"), 
+      the output cluster will be used.
+    * The test uses "/user/mobilize/test/test_hdfs_1.in" for the initial
+write, then "test_cluster_2/user/mobilize/test/test_hdfs_copy.out" for
+the copy and subsequent read.
+  * both cluster arguments and user are optional. If copying from
 one cluster to another, your source_cluster gateway_node must be able to
 access both clusters.
 
@@ -204,15 +211,18 @@ From the project folder, run
 3) $ rake mobilize_hdfs:setup
 
 Copy over the config files from the mobilize-base and mobilize-ssh
-projects into the config dir, and populate the values in the hdfs.yml file.
+projects into the config dir, and populate the values in the hadoop.yml file.
+
+If you don't have two clusters, you can populate test_cluster_2 with the
+same cluster as your first.
 
 3) $ rake test
 
 * The test runs a 4 stage job:
   * test_hdfs_1:
-    * `hdfs.write target:"/home/mobilize/test/test_hdfs_1.out", source:"Runner_mobilize(test)/test_hdfs_1.in"`
-    * `hdfs.copy source:"/home/mobilize/test/test_hdfs_1.out", target:"/home/mobilize/test/test_hdfs_1_copy.out"`
-    * `hdfs.read source:"/home/mobilize/test/test_hdfs_1_copy.out"`
+    * `hdfs.write target:"/user/mobilize/test/test_hdfs_1.out", source:"Runner_mobilize(test)/test_hdfs_1.in"`
+    * `hdfs.copy source:"/user/mobilize/test/test_hdfs_1.out",target:"test_cluster_2/user/mobilize/test/test_hdfs_1_copy.out"`
+    * `hdfs.read source:"/user/mobilize/test/test_hdfs_1_copy.out"`
     * `gsheet.write source:"stage3", target:"Runner_mobilize(test)/test_hdfs_1_copy.out"`
   * at the end of the test, there should be a sheet named "test_hdfs_1_copy.out" with the same data as test_hdfs_1.in
 
