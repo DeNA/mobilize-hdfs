@@ -10,7 +10,7 @@ Gem::Specification.new do |gem|
   gem.email         = ["cpaesleme@ngmoco.com"]
   gem.description   = %q{Adds hdfs read, write, and copy support to mobilize-ssh}
   gem.summary       = %q{Adds hdfs read, write, and copy support to mobilize-ssh}
-  gem.homepage      = ""
+  gem.homepage      = "http://github.com/ngmoco/mobilize-hdfs"
 
   gem.files         = `git ls-files`.split($/)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
