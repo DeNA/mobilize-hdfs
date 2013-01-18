@@ -112,8 +112,6 @@ parameters for Hdfs stages. Cluster aliases contain 5 parameters:
 This node must be defined in ssh.yml according to the specs in
 [mobilize-ssh][mobilize-ssh]. The gateway node can be the same for
 multiple clusters, depending on your cluster setup.
-  * exec_path - defines the path to the hadoop executable on the
-gateway_node.
 
 Sample hadoop.yml:
 
