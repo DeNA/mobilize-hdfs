@@ -28,6 +28,7 @@ describe "Mobilize" do
     jobs_sheet = r.gsheet(gdrive_slot)
 
     test_job_rows = ::YAML.load_file("#{Mobilize::Base.root}/test/hdfs_job_rows.yml")
+    test_job_rows.map{|j| r.jobs(j['name'])}.each{|j| j.delete if j}
     jobs_sheet.add_or_update_rows(test_job_rows)
 
     hdfs_1_target_sheet = Mobilize::Gsheet.find_by_path("#{r.path.split("/")[0..-2].join("/")}/test_hdfs_1_copy.out",gdrive_slot)
