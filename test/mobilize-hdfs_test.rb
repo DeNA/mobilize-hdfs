@@ -34,9 +34,9 @@ describe "Mobilize" do
     hdfs_1_target_sheet = Mobilize::Gsheet.find_by_path("#{r.path.split("/")[0..-2].join("/")}/test_hdfs_1_copy.out",gdrive_slot)
     [hdfs_1_target_sheet].each {|s| s.delete if s}
 
-    puts "job row added, force enqueued requestor, wait 120s"
+    puts "job row added, force enqueued requestor, wait 150s"
     r.enqueue!
-    sleep 120
+    sleep 150
 
     puts "jobtracker posted data to test sheet"
     test_destination_sheet = Mobilize::Gsheet.find_by_path("#{r.path.split("/")[0..-2].join("/")}/test_hdfs_1_copy.out",gdrive_slot)
