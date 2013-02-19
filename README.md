@@ -228,16 +228,16 @@ same cluster as your first.
 Meta
 ----
 
-* Code: `git clone git://github.com/ngmoco/mobilize-hdfs.git`
-* Home: <https://github.com/ngmoco/mobilize-hdfs>
-* Bugs: <https://github.com/ngmoco/mobilize-hdfs/issues>
+* Code: `git clone git://github.com/dena/mobilize-hdfs.git`
+* Home: <https://github.com/dena/mobilize-hdfs>
+* Bugs: <https://github.com/dena/mobilize-hdfs/issues>
 * Gems: <http://rubygems.org/gems/mobilize-hdfs>
 
 <a name='section_Author'></a>
 Author
 ------
 
-Cassio Paes-Leme :: cpaesleme@ngmoco.com :: @cpaesleme
+Cassio Paes-Leme :: cpaesleme@dena.com :: @cpaesleme
 
-[mobilize-base]: https://github.com/ngmoco/mobilize-base
-[mobilize-ssh]: https://github.com/ngmoco/mobilize-ssh
+[mobilize-base]: https://github.com/dena/mobilize-base
+[mobilize-ssh]: https://github.com/dena/mobilize-ssh
