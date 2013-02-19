@@ -22,7 +22,7 @@ describe "Mobilize" do
 
     puts "add test_source data"
     hdfs_1_sheet = Mobilize::Gsheet.find_or_create_by_path("#{r.path.split("/")[0..-2].join("/")}/test_hdfs_1.in",gdrive_slot)
-    hdfs_1_tsv = ([(["test"]*10).join("\t")]*10).join("\n")
+    hdfs_1_tsv = ([%w{test0 test1 test2 test3 test4 test5 test6 test7 test8 test9}.join("\t")]*10).join("\n")
     hdfs_1_sheet.write(hdfs_1_tsv,u.name)
 
     jobs_sheet = r.gsheet(gdrive_slot)
@@ -41,7 +41,7 @@ describe "Mobilize" do
     puts "jobtracker posted data to test sheet"
     test_destination_sheet = Mobilize::Gsheet.find_by_path("#{r.path.split("/")[0..-2].join("/")}/test_hdfs_1_copy.out",gdrive_slot)
 
-    assert test_destination_sheet.to_tsv.length == 499
+    assert test_destination_sheet.read(u.name).length == 599
   end
 
 end
