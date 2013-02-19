@@ -37,7 +37,7 @@ module Mobilize
       cluster, cluster_path = Hdfs.resolve_path(path)
       gateway_node = Hadoop.gateway_node(cluster)
       #need to direct stderr to dev null since hdfs throws errors at being headed off
-      command = "((#{Hadoop.exec_path(cluster)} fs -fs '#{Hdfs.namenode_path(path)}' -cat #{cluster_path}"
+      command = "((#{Hadoop.exec_path(cluster)} fs -fs '#{Hdfs.namenode_path(path)}' -cat '#{cluster_path}'"
       command += " | head -c #{Hadoop.read_limit}) > out.txt 2> /dev/null) && cat out.txt"
       response = Ssh.run(gateway_node,command,user)
       if response.length==Hadoop.read_limit
