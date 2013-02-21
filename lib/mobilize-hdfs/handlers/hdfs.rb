@@ -177,10 +177,18 @@ module Mobilize
     end
 
     def Hdfs.read_by_dataset_path(dst_path,user)
+      #assume all paths are absolute
+      unless dst_path.starts_with?("/") 
+        dst_path = "/#{dst_path}"
+      end
       Hdfs.read(dst_path,user)
     end
 
     def Hdfs.write_by_dataset_path(dst_path,string,user)
+      #assume all paths are absolute
+      unless dst_path.starts_with?("/")
+        dst_path = "/#{dst_path}"
+      end
       Hdfs.write(dst_path,string,user)
     end
   end
