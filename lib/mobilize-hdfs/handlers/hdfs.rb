@@ -37,7 +37,7 @@ module Mobilize
       cluster, cluster_path = Hdfs.resolve_path(path)
       gateway_node = Hadoop.gateway_node(cluster)
       #need to direct stderr to dev null since hdfs throws errors at being headed off
-      command = "((#{Hadoop.exec_path(cluster)} fs -fs '#{Hdfs.namenode_path(path)}' -cat '#{cluster_path}'"
+      command = "((#{Hadoop.exec_path(cluster)} fs -fs '#{Hdfs.root(cluster)}' -cat '#{cluster_path}'"
       command += " | head -c #{Hadoop.read_limit}) > out.txt 2> /dev/null) && cat out.txt"
       response = Ssh.run(gateway_node,command,user)
       if response.length==Hadoop.read_limit
@@ -112,18 +112,21 @@ module Mobilize
       source_path = params['source']
       target_path = params['target']
       user = params['user']
-      #check for source in hdfs format
-      source_cluster, source_cluster_path = Hdfs.resolve_path(source_path)
-      if source_cluster.nil?
-        #not hdfs
+      begin
+        #check for source in gsheet format
         gdrive_slot = Gdrive.slot_worker_by_path(stage_path)
         #return blank response if there are no slots available
         return nil unless gdrive_slot
         source_dst = s.source_dsts(gdrive_slot).first
+        in_string = source_dst.read(user)
         Gdrive.unslot_worker_by_path(stage_path)
-      else
+      rescue
+        #try hdfs
+        source_cluster, source_cluster_path = Hdfs.resolve_path(source_path)
         source_path = "#{source_cluster}#{source_cluster_path}"
         source_dst = Dataset.find_or_create_by_handler_and_path("hdfs",source_path)
+        in_string = source_dst.read(user)
+        raise "No data found at hdfs://#{source_path}" unless in_string.to_s.length>0
       end
 
       #determine cluster for target
@@ -138,7 +141,6 @@ module Mobilize
       end
 
       target_path = "#{target_cluster}#{target_cluster_path}"
-      in_string = source_dst.read(user)
       out_string = Hdfs.write(target_path,in_string,user)
 
       out_url = "hdfs://#{Hadoop.output_cluster}#{Hadoop.output_dir}hdfs/#{stage_path}/out"
