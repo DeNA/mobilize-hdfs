@@ -53,7 +53,8 @@ module Mobilize
       elsif Hadoop.clusters.keys.include?(path.split("/").first)
         return path.split("/").ie{|p| [p.first,"/#{p[1..-1].join("/")}"]}
       else
-        return [nil,nil]
+        #default cluster, slash on the front
+        return [Hadoop.output_cluster,"/#{path.to_s}"]
       end
     end
 
@@ -177,18 +178,10 @@ module Mobilize
     end
 
     def Hdfs.read_by_dataset_path(dst_path,user)
-      #assume all paths are absolute
-      unless dst_path.starts_with?("/") 
-        dst_path = "/#{dst_path}"
-      end
       Hdfs.read(dst_path,user)
     end
 
     def Hdfs.write_by_dataset_path(dst_path,string,user)
-      #assume all paths are absolute
-      unless dst_path.starts_with?("/")
-        dst_path = "/#{dst_path}"
-      end
       Hdfs.write(dst_path,string,user)
     end
   end
