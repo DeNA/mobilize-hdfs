@@ -7,7 +7,7 @@ Gem::Specification.new do |gem|
   gem.name          = "mobilize-hdfs"
   gem.version       = Mobilize::Hdfs::VERSION
   gem.authors       = ["Cassio Paes-Leme"]
-  gem.email         = ["cpaesleme@ngmoco.com"]
+  gem.email         = ["cpaesleme@dena.com"]
   gem.description   = %q{Adds hdfs read, write, and copy support to mobilize-ssh}
   gem.summary       = %q{Adds hdfs read, write, and copy support to mobilize-ssh}
   gem.homepage      = "http://github.com/dena/mobilize-hdfs"
