@@ -9,15 +9,15 @@ module Mobilize
     end
 
     def Hadoop.gateway_node(cluster)
-      Hadoop.clusters[cluster]['gateway_node']
+      Hadoop.config['clusters'][cluster]['gateway_node']
     end
 
     def Hadoop.clusters
-      Hadoop.config['clusters']
+      Hadoop.config['clusters'].keys
     end
 
-    def Hadoop.output_cluster
-      Hadoop.config['output_cluster']
+    def Hadoop.default_cluster
+      Hadoop.clusters.first
     end
 
     def Hadoop.output_dir
@@ -28,20 +28,20 @@ module Mobilize
       Hadoop.config['read_limit']
     end
 
-    def Hadoop.job(command,cluster,user,file_hash={})
+    def Hadoop.job(cluster,command,user,file_hash={})
       command = ["-",command].join unless command.starts_with?("-")
-      Hadoop.run("job -fs #{Hdfs.root(cluster)} #{command}",cluster,user,file_hash).ie do |r|
+      Hadoop.run(cluster,"job -fs #{Hdfs.root(cluster)} #{command}",user,file_hash).ie do |r|
         r.class==Array ? r.first : r
       end
     end
 
     def Hadoop.job_list(cluster)
-      raw_list = Hadoop.job("list",{},cluster)
+      raw_list = Hadoop.job(cluster,"list")
       raw_list.split("\n")[1..-1].join("\n").tsv_to_hash_array
     end
 
-    def Hadoop.job_status(hdfs_job_id,cluster)
-      raw_status = Hadoop.job("status #{hdfs_job_id}",{},cluster)
+    def Hadoop.job_status(cluster,hadoop_job_id)
+      raw_status = Hadoop.job(cluster,"status #{hadoop_job_id}",{})
       dhash_status = raw_status.strip.split("\n").map do |sline|
                        delim_index = [sline.index("="),sline.index(":")].compact.min
                        if delim_index
@@ -54,14 +54,14 @@ module Mobilize
       hash_status
     end
 
-    def Hadoop.run(command,cluster,user,file_hash={})
+    def Hadoop.run(cluster,command,user_name,file_hash={})
       h_command = if command.starts_with?("hadoop")
                     command.sub("hadoop",Hadoop.exec_path(cluster))
                   else
                     "#{Hadoop.exec_path(cluster)} #{command}"
                   end
       gateway_node = Hadoop.gateway_node(cluster)
-      Ssh.run(gateway_node,h_command,user,file_hash)
+      Ssh.run(gateway_node,h_command,user_name,file_hash)
     end
   end
 end

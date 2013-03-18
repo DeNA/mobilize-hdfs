@@ -2,10 +2,9 @@
   active: true
   trigger: once
   status: ""
-  stage1: hdfs.write target:"/user/mobilize/test/test_hdfs_1.out", 
-            source:"Runner_mobilize(test)/test_hdfs_1.in"
-  stage2: hdfs.copy source:"/user/mobilize/test/test_hdfs_1.out", 
+  stage1: hdfs.write target:"/user/mobilize/test/test_hdfs_1.out",
+            source:"test_hdfs_1.in"
+  stage2: hdfs.write source:"/user/mobilize/test/test_hdfs_1.out",
             target:"test_cluster_2/user/mobilize/test/test_hdfs_1_copy.out",
-  stage3: hdfs.read source:"test_cluster_2/user/mobilize/test/test_hdfs_1_copy.out"
-  stage4: gsheet.write source:"hdfs://test_cluster_2/user/mobilize/test/test_hdfs_1_copy.out", 
+  stage3: gsheet.write source:"hdfs://test_cluster_2/user/mobilize/test/test_hdfs_1_copy.out",
             target:"Runner_mobilize(test)/test_hdfs_1_copy.out"

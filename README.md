@@ -94,14 +94,11 @@ be read. If the data is bigger than the read limit, an exception will be
 raised.
 
 The Hadoop configuration consists of:
-* output_cluster, which is the cluster where stage outputs will be
-stored. Clusters are defined in the clusters parameter as described
-below.
 * output_dir, which is the absolute path to the directory in HDFS that will store stage
-outputs. Directory names should end with a slash (/).
+outputs. Directory names should end with a slash (/). It will choose the
+first cluster as the default cluster to write to.
 * read_limit, which is the maximum size data that can be read from the
-cluster. This is applied at read time by piping hadoop dfs -cat | head
--c <size limit>. Default is 1GB.
+cluster. Default is 1GB.
 * clusters - this defines aliases for clusters, which are used as
 parameters for Hdfs stages. Cluster aliases contain 5 parameters:
   * namenode - defines the name and port for accessing the namenode
@@ -118,7 +115,6 @@ Sample hadoop.yml:
 ``` yml
 ---
 development:
-  output_cluster: dev_cluster
   output_dir: /user/mobilize/development/
   read_limit: 1000000000
   clusters:
@@ -135,7 +131,6 @@ development:
       gateway_node: dev_hadoop_host
       exec_path: /path/to/hadoop
 test:
-  output_cluster: test_cluster
   output_dir: /user/mobilize/test/
   read_limit: 1000000000
   clusters:
@@ -152,7 +147,6 @@ test:
       gateway_node: test_hadoop_host
       exec_path: /path/to/hadoop
 production:
-  output_cluster: prod_cluster
   output_dir: /user/mobilize/production/
   read_limit: 1000000000
   clusters:
@@ -181,17 +175,15 @@ Start
   * cluster and user are optional for all of the below.
     * cluster defaults to output_cluster;
     * user is treated the same way as in [mobilize-ssh][mobilize-ssh].
-  * hdfs.read `source:<hdfs_full_path>, user:<user>`, which reads the input path on the specified cluster.
-  * hdfs.write `source:<gsheet_full_path>, target:<hdfs_full_path>, user:<user>` 
-  * hdfs.copy `source:<source_hdfs_full_path>,target:<target_hdfs_full_path>,user:<user>`
-  * The gsheet_full_path should be of the form `<gbook_name>/<gsheet_name>`. The test uses "Requestor_mobilize(test)/test_hdfs_1.in".
-  * The hdfs_full_path is the cluster alias followed by full path on the cluster. 
+  * hdfs.write `source:<full_path>, target:<hdfs_full_path>, user:<user>` 
+  * The full_path can use `<gsheet_path>` or `<hdfs_path>`. The test uses "test_hdfs_1.in".
+  * `<hdfs_path>` is the cluster alias followed by absolute path on the cluster.
     * if a full path is supplied without a preceding cluster alias (e.g. "/user/mobilize/test/test_hdfs_1.in"), 
-      the output cluster will be used.
+      the first listed cluster will be used as the default.
     * The test uses "/user/mobilize/test/test_hdfs_1.in" for the initial
 write, then "test_cluster_2/user/mobilize/test/test_hdfs_copy.out" for
-the copy and subsequent read.
-  * both cluster arguments and user are optional. If copying from
+the cross-cluster write.
+  * both cluster arguments and user are optional. If writing from
 one cluster to another, your source_cluster gateway_node must be able to
 access both clusters.
 
@@ -216,12 +208,11 @@ same cluster as your first.
 
 3) $ rake test
 
-* The test runs a 4 stage job:
+* The test runs a 3 stage job:
   * test_hdfs_1:
-    * `hdfs.write target:"/user/mobilize/test/test_hdfs_1.out", source:"Runner_mobilize(test)/test_hdfs_1.in"`
-    * `hdfs.copy source:"/user/mobilize/test/test_hdfs_1.out",target:"test_cluster_2/user/mobilize/test/test_hdfs_1_copy.out"`
-    * `hdfs.read source:"/user/mobilize/test/test_hdfs_1_copy.out"`
-    * `gsheet.write source:"stage3", target:"Runner_mobilize(test)/test_hdfs_1_copy.out"`
+    * `hdfs.write target:"/user/mobilize/test/test_hdfs_1.out", source:"test_hdfs_1.in"`
+    * `hdfs.write source:"/user/mobilize/test/test_hdfs_1.out",target:"test_cluster_2/user/mobilize/test/test_hdfs_1_copy.out"`
+    * `gsheet.write source:"hdfs://test_cluster_2/user/mobilize/test/test_hdfs_1_copy.out", target:"test_hdfs_1_copy.out"`
   * at the end of the test, there should be a sheet named "test_hdfs_1_copy.out" with the same data as test_hdfs_1.in
 
 <a name='section_Meta'></a>
