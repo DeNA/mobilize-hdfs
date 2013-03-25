@@ -96,7 +96,7 @@ module Mobilize
     end
 
     # converts a source path or target path to a dst in the context of handler and stage
-    def Hdfs.path_to_dst(path,stage_path)
+    def Hdfs.path_to_dst(path,stage_path,gdrive_slot)
       has_handler = true if path.index("://")
       s = Stage.where(:path=>stage_path).first
       params = s.params
@@ -114,7 +114,7 @@ module Mobilize
         return Dataset.find_or_create_by_url(hdfs_url)
       end
       #otherwise, use ssh convention
-      return Ssh.path_to_dst(path,stage_path)
+      return Ssh.path_to_dst(path,stage_path,gdrive_slot)
     end
 
     def Hdfs.url_by_path(path,user_name,is_target=false)
@@ -156,8 +156,12 @@ module Mobilize
     end
 
     def Hdfs.write_by_stage_path(stage_path)
+      gdrive_slot = Gdrive.slot_worker_by_path(stage_path)
+      #return blank response if there are no slots available
+      return nil unless gdrive_slot
       s = Stage.where(:path=>stage_path).first
-      source = s.sources.first
+      source = s.sources(gdrive_slot).first
+      Gdrive.unslot_worker_by_path(stage_path)
       target = s.target
       cluster = target.url.split("://").last.split("/").first
       user_name = Hdfs.user_name_by_stage_path(stage_path,cluster)
