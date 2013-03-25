@@ -168,7 +168,7 @@ module Mobilize
       stdout = if source.handler == 'hdfs'
                    Hdfs.copy(source.url,target.url,user_name)
                  elsif ["gsheet","gfile","ssh"].include?(source.handler)
-                   in_string = source.read(user_name)
+                   in_string = source.read(user_name,gdrive_slot)
                    Dataset.write_by_url(target.url, in_string, user_name)
                  end
       return {'out_str'=>stdout, 'signal' => 0}
