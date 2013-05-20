@@ -8,3 +8,4 @@ $dir = File.dirname(File.expand_path(__FILE__))
 ENV['MOBILIZE_ENV'] = 'test'
 require 'mobilize-hdfs'
 $TESTING = true
+require "#{Mobilize::Ssh.home_dir}/test/test_helper"

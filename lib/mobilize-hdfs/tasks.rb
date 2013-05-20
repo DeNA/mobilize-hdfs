@@ -1,3 +1,4 @@
+require 'yaml'
 namespace :mobilize_hdfs do
   desc "Set up config and log folders and files"
   task :setup do
