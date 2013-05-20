@@ -1,4 +1,4 @@
-- name: test_hdfs_1
+- name: hdfs1
   active: true
   trigger: once
   status: ""
@@ -7,4 +7,4 @@
   stage2: hdfs.write source:"/user/mobilize/test/hdfs1.out",
             target:"test_cluster_2/user/mobilize/test/hdfs1_copy.out",
   stage3: gsheet.write source:"hdfs://test_cluster_2/user/mobilize/test/hdfs1_copy.out",
-            target:"Runner_mobilize(test)/hdfs1_copy.out" 
+            target:"Runner_mobilize(test)/hdfs1_copy.out"
