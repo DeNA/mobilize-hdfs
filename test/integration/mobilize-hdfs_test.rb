@@ -11,7 +11,7 @@ describe "Mobilize" do
     user_name = u.name
     gdrive_slot = u.email
 
-    puts "add test code"
+    puts "add test data"
     ["hdfs1.in"].each do |fixture_name|
       target_url = "gsheet://#{r.title}/#{fixture_name}"
       TestHelper.write_fixture(fixture_name, target_url, 'replace')

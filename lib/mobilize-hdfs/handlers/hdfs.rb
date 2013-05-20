@@ -127,17 +127,7 @@ module Mobilize
         path = path.starts_with?("/") ? path : "/#{path}"
       end
       url = "hdfs://#{cluster}#{path}"
-      hdfs_url = Hdfs.hdfs_url(url)
-      begin
-        response = Hadoop.run(cluster, "fs -tail '#{hdfs_url}'", user_name)
-        if response['exit_code']==0 or is_target
-          return "hdfs://#{cluster}#{path}"
-        else
-          raise "Unable to find #{url} with error: #{response['stderr']}"
-        end
-      rescue => exc
-        raise Exception, "Unable to find #{url} with error: #{exc.to_s}", exc.backtrace
-      end
+      return url
     end
 
     def Hdfs.user_name_by_stage_path(stage_path,cluster=nil)
