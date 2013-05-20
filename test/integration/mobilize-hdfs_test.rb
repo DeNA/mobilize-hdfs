@@ -33,7 +33,7 @@ describe "Mobilize" do
     puts "update job status and activity"
     r.update_gsheet(gdrive_slot)
 
-    puts "posted data to test sheets"
+    puts "check posted data"
     ['hdfs1_copy.out'].each do |out_name|
       url = "gsheet://#{r.title}/#{out_name}"
       assert TestHelper.check_output(url, 'min_length' => 599) == true
