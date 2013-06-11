@@ -61,7 +61,8 @@ module Mobilize
                     "#{Hadoop.exec_path(cluster)} #{command}"
                   end
       gateway_node = Hadoop.gateway_node(cluster)
-      Ssh.run(gateway_node,h_command,user_name,file_hash)
+      stage_path=nil
+      Ssh.run(gateway_node,h_command,user_name,stage_path,file_hash)
     end
   end
 end
