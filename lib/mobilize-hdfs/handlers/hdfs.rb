@@ -139,7 +139,7 @@ module Mobilize
       node = Hadoop.gateway_node(cluster)
       if user_name and !Ssh.sudoers(node).include?(u.name)
         raise "#{u.name} does not have su permissions for node #{node}"
-      elsif user_name.nil? and Ssh.su_all_users(node)
+      elsif user_name.nil?
         user_name = u.name
       end
       return user_name
