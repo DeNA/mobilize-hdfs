@@ -1,5 +1,5 @@
 module Mobilize
   module Hdfs
-    VERSION = "1.364"
+    VERSION = "1.365"
   end
 end
