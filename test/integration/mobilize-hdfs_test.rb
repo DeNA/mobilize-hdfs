@@ -2,6 +2,9 @@ require 'test_helper'
 describe "Mobilize" do
   # enqueues 4 workers on Resque
   it "runs integration test" do
+    puts "restart test redis"
+    TestHelper.restart_test_redis
+    TestHelper.drop_test_db
 
     puts "restart workers"
     Mobilize::Jobtracker.restart_workers!
@@ -10,6 +13,10 @@ describe "Mobilize" do
     r = u.runner
     user_name = u.name
     gdrive_slot = u.email
+
+    puts "build test runner"
+    TestHelper.build_test_runner(user_name)
+    assert Mobilize::Jobtracker.workers.length == Mobilize::Resque.config['max_workers'].to_i
 
     puts "add test data"
     ["hdfs1.in"].each do |fixture_name|
