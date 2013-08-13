@@ -17,3 +17,4 @@ test/version_tmp
 tmp
 log
 config
+test/dump.rdb
