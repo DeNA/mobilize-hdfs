@@ -18,3 +18,4 @@ tmp
 log
 config
 test/dump.rdb
+spec/dump.rdb

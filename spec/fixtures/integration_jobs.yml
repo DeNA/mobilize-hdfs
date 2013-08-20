@@ -1,0 +1,12 @@
+- name: hdfs1
+  active: true
+  trigger: once
+  status: ""
+  stage1: hdfs.write target:"/user/mobilize/test/hdfs1.out",
+            source:"hdfs1.in",
+            retries:5
+  stage2: hdfs.write source:"/user/mobilize/test/hdfs1.out",
+            target:"test_cluster_2/user/mobilize/test/hdfs1_copy.out",
+            retries:5
+  stage3: gsheet.write source:"hdfs://test_cluster_2/user/mobilize/test/hdfs1_copy.out",
+            target:"Runner_mobilize(test)/hdfs1_copy.out"
