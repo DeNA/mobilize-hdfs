@@ -6,11 +6,12 @@ require 'mobilize-hdfs/version'
 Gem::Specification.new do |gem|
   gem.name          = "mobilize-hdfs"
   gem.version       = Mobilize::Hdfs::VERSION
-  gem.authors       = ["Cassio Paes-Leme"]
-  gem.email         = ["cpaesleme@dena.com"]
+  gem.authors       = ["Cassio Paes-Leme", "Ryosuke IWANAGA"]
+  gem.email         = ["cpaesleme@dena.com", "riywo.jp@gmail.com"]
+  gem.license       = "Apache License, Version 2.0"
+  gem.homepage      = "http://github.com/DeNA/mobilize-hdfs"
   gem.description   = %q{Adds hdfs read, write, and copy support to mobilize-ssh}
   gem.summary       = %q{Adds hdfs read, write, and copy support to mobilize-ssh}
-  gem.homepage      = "http://github.com/dena/mobilize-hdfs"
 
   gem.files         = `git ls-files`.split($/)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
