@@ -17,5 +17,5 @@ Gem::Specification.new do |gem|
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.require_paths = ["lib"]
-  gem.add_runtime_dependency "mobilize-ssh","1.380"
+  gem.add_runtime_dependency "mobilize-ssh","1.381"
 end
